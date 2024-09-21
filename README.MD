@@ -9,7 +9,7 @@ Primeiro começamos instalando e iniciando e venv
 
 ```sh
 python3 -m venv .venv
-python3 source .venv/bin/activate
+source .venv/bin/activate
 ```
 
 Logo em seguida iniciaremos os containers do docker
