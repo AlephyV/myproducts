@@ -1,11 +1,16 @@
-from contextlib import contextmanager
 from pymongo import MongoClient
 
-DATABASE_URL = "mongodb://localhost:27017/"
-DATABASE_NAME = "products"
+MONGO_USER = "root"
+MONGO_PASSWORD = "example"
+MONGO_HOST = "localhost"
+MONGO_PORT = 27017
+MONGO_DB = "products"
 
-client = MongoClient(DATABASE_URL)
-db = client[DATABASE_NAME]
+mongo_uri = f"mongodb://{MONGO_USER}:{MONGO_PASSWORD}@{MONGO_HOST}:{MONGO_PORT}/{MONGO_DB}?authSource=admin"
+
+client = MongoClient(mongo_uri)
+db = client[MONGO_DB]
 
 def get_db():
     return db
+
