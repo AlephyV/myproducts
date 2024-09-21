@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from app.api.v1.endpoints import users
+from app.api.v1.endpoints import products, users
 import logging
 
 from app.core.loggin_config import setup_logging
@@ -9,7 +9,7 @@ setup_logging()
 
 app = FastAPI()
 
-#app.include_router(products.router, prefix="/products", tags=["Products"])
+app.include_router(products.router, prefix="/products", tags=["Products"])
 app.include_router(users.router, prefix="/users", tags=["Users"])
 
 @app.exception_handler(Exception)

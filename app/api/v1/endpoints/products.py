@@ -1,40 +1,50 @@
-# from fastapi import APIRouter, HTTPException, Depends
-# from sqlalchemy.orm import Session
-# from typing import List
-# from app import models, schemas, crud
-# from app.database import get_db
+from fastapi import APIRouter, Depends, HTTPException
+from pymongo.errors import DuplicateKeyError
 
-# router = APIRouter()
+from app.schemas.products import Product, ProductCreate, ProductUpdate
+from app.core.dependencies import get_product_service
+from app.services.products_service import ProductService
 
-# @router.post("/", response_model=schemas.Product)
-# def create_product(product: schemas.ProductCreate, db: Session = Depends(get_db)):
-#     db_product = crud.get_product_by_name(db, name=product.name)
-#     if db_product:
-#         raise HTTPException(status_code=400, detail="Product already registered")
-#     return crud.create_product(db=db, product=product)
+router = APIRouter()
 
-# @router.get("/", response_model=List[schemas.Product])
-# def read_products(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-#     products = crud.get_products(db, skip=skip, limit=limit)
-#     return products
+@router.post("/", response_model=Product)
+async def create_product(product: ProductCreate, product_service: ProductService = Depends(get_product_service)):
+    try:
+        created_product = product_service.create_product(product.model_dump())
+        created_product["id"] = created_product.pop("_id")
+        return Product(**created_product)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except DuplicateKeyError:
+        raise HTTPException(status_code=400, detail="Product already exists")
 
-# @router.get("/{product_id}", response_model=schemas.Product)
-# def read_product(product_id: int, db: Session = Depends(get_db)):
-#     db_product = crud.get_product(db, product_id=product_id)
-#     if db_product is None:
-#         raise HTTPException(status_code=404, detail="Product not found")
-#     return db_product
+@router.get("/{product_id}", response_model=Product)
+async def read_product(product_id: str, product_service: ProductService = Depends(get_product_service)):
+    product = product_service.read_product(product_id)
+    if product is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+    product["id"] = product.pop("_id")
+    return Product(**product)
 
-# @router.put("/{product_id}", response_model=schemas.Product)
-# def update_product(product_id: int, product: schemas.ProductUpdate, db: Session = Depends(get_db)):
-#     db_product = crud.get_product(db, product_id=product_id)
-#     if db_product is None:
-#         raise HTTPException(status_code=404, detail="Product not found")
-#     return crud.update_product(db=db, product=product, product_id=product_id)
+@router.get("/", response_model=list[Product])
+async def read_products(product_service: ProductService = Depends(get_product_service)):
+    products = product_service.read_products()
+    for product in products:
+        product["id"] = product.pop("_id")
+    return [Product(**product) for product in products]
 
-# @router.delete("/{product_id}", response_model=schemas.Product)
-# def delete_product(product_id: int, db: Session = Depends(get_db)):
-#     db_product = crud.get_product(db, product_id=product_id)
-#     if db_product is None:
-#         raise HTTPException(status_code=404, detail="Product not found")
-#     return crud.delete_product(db=db, product_id=product_id)
+@router.put("/{product_id}", response_model=Product)
+async def update_product(product_id: str, product: ProductUpdate, product_service: ProductService = Depends(get_product_service)):
+    updated_product = product_service.update_product(product_id, product.model_dump())
+    if updated_product is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+    updated_product["id"] = updated_product.pop("_id")
+    return Product(**updated_product)
+
+@router.delete("/{product_id}", response_model=Product)
+async def delete_product(product_id: str, product_service: ProductService = Depends(get_product_service)):
+    deleted_product = product_service.delete_product(product_id)
+    if deleted_product is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+    deleted_product["id"] = deleted_product.pop("_id")
+    return Product(**deleted_product)
