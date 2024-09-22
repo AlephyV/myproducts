@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends
 
-from app.core.auth import TokenData, get_current_user
 from app.schemas.users import Token, User, UserCreate, UserLogin
-from app.core.dependencies import get_user_service
+from app.core.dependencies import get_current_user_from_service, get_user_service
 from app.services.users_service import UserService
 from fastapi import HTTPException, status
 
@@ -28,13 +27,5 @@ async def login_user(user: UserLogin, user_service: UserService = Depends(get_us
     return authenticated_user
 
 @router.get("/me", response_model=User)
-async def read_users_me(current_user: TokenData = Depends(get_current_user), user_service: UserService = Depends(get_user_service)):
-    user = user_service.get_user(current_user.sub)
-    user["id"] = user.pop("_id")
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return user
+async def read_users_me(current_user: User = Depends(get_current_user_from_service)):
+    return current_user

@@ -1,7 +1,10 @@
 import bcrypt
 from bson.objectid import ObjectId
+from fastapi import Request
+from app.core.auth import get_current_user
 
 from app.core.auth import create_access_token
+from fastapi.security import OAuth2PasswordBearer
 
 class UserService:
     def __init__(self, db):
@@ -30,3 +33,17 @@ class UserService:
                 access_token = create_access_token(data={"sub": user["_id"]})
                 return {"access_token": access_token, "token_type": "bearer"}
         return None
+    
+    
+    def get_current_user(self, request: Request):
+        oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+        token = oauth2_scheme(request)
+        print(token)
+        exit()
+        token_data = get_current_user(token)
+        user_id = token_data.sub
+        user = self.get_user(user_id)
+        if user:
+            return user
+        return None
+                         
